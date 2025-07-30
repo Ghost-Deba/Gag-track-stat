@@ -74,7 +74,6 @@ local function createMessage(player)
 
     return {
         username = WEBHOOK_NAME,
-        avatar_url = getPlayerAvatar(player),
         embeds = {{
             title = "🐾 Pets In Inventory - " .. player.Name,
             description = petList,
