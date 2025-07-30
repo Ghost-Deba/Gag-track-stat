@@ -10,7 +10,7 @@ local petNames = {
     "Tarantula Hawk","Kodama","Corrupted Kodama","Caterpillar","Snail","Petal Bee","Moth","Scarlet Macaw",
     "Ostrich","Peacock","Capybara","Tanuki","Tanchozuru","Raiju","Brown Mouse","Giant Ant","Praying Mantis",
     "Red Giant Ant","Squirrel","Bear Bee","Butterfly","Pack Bee","Mimic Octopus","Kappa","Koi","Red Fox",
-    "Dragonfly","Disco Bee","Queen Bee (Pet)","Kitsune","Corrupted Kitsune"
+    "Dragonfly","Disco Bee","Queen Bee","Kitsune","Corrupted Kitsune"
 }
 
 -- الحصول على صورة اللاعب
@@ -72,19 +72,23 @@ local function sendToWebhook(data)
     local success, json = pcall(http.JSONEncode, http, data)
     if not success then return false end
     
-    local request = (http and http.request) or (syn and syn.request)
-    if not request then return false end
-    
-    local response = request({
-        Url = getgenv().config.WEBHOOK_URL,
-        Method = "POST",
-        Headers = {
-            ["Content-Type"] = "application/json"
-        },
-        Body = json
-    })
-    
-    return response.Success
+    if syn and syn.request then
+        local response = syn.request({
+            Url = getgenv().config.WEBHOOK_URL,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = json
+        })
+        return response.Success
+    else
+        -- Fallback to HttpService
+        local success, response = pcall(function()
+            return http:PostAsync(getgenv().config.WEBHOOK_URL, json, Enum.HttpContentType.ApplicationJson)
+        end)
+        return success and response ~= nil
+    end
 end
 
 -- الدالة الرئيسية
