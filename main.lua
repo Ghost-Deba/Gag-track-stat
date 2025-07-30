@@ -1,86 +1,107 @@
 local player = game:GetService("Players").LocalPlayer
 local backpack = player:WaitForChild("Backpack")
 local http = game:GetService("HttpService")
+local UPDATE_INTERVAL = 3600 -- كل 60 ثانية
 
--- قائمة الحيوانات
-local petNames = {"Starfish","Crab","Seagull","Bunny","Dog","Golden Lab","Bee","Shiba Inu","Maneki-neko",
+-- قائمة الحيوانات الأليفة
+local petNames = {
+    "Starfish","Crab","Seagull","Bunny","Dog","Golden Lab","Bee","Shiba Inu","Maneki-neko",
     "Flamingo","Toucan","Sea Turtle","Orangutan","Seal","Honey Bee","Wasp","Nihonzaru","Grey Mouse",
     "Tarantula Hawk","Kodama","Corrupted Kodama","Caterpillar","Snail","Petal Bee","Moth","Scarlet Macaw",
     "Ostrich","Peacock","Capybara","Tanuki","Tanchozuru","Raiju","Brown Mouse","Giant Ant","Praying Mantis",
     "Red Giant Ant","Squirrel","Bear Bee","Butterfly","Pack Bee","Mimic Octopus","Kappa","Koi","Red Fox",
-    "Dragonfly","Disco Bee","Queen Bee (Pet)","Kitsune","Corrupted Kitsune"}
+    "Dragonfly","Disco Bee","Queen Bee (Pet)","Kitsune","Corrupted Kitsune"
+}
 
--- دالة التعديل الآمنة
-local function safeEditMessage(content)
-    local url = getgenv().config.WEBHOOK_URL.."/messages/"..getgenv().config.MESSAGE_ID
-    
-    -- المحاولة الأولى: استخدام PATCH إن كان متاحاً
-    local success = pcall(function()
-        local response = (syn and syn.request or http_request or request)({
-            Url = url,
-            Method = "PATCH",
-            Headers = {["Content-Type"] = "application/json"},
-            Body = http:JSONEncode(content)
-        })
-        return response.Success
-    end)
-    
-    -- إذا فشل PATCH، نستخدم POST مع إضافة ?wait=true
-    if not success then
-        local response = (syn and syn.request or http_request or request)({
-            Url = url.."?wait=true",
-            Method = "POST",
-            Headers = {["Content-Type"] = "application/json"},
-            Body = http:JSONEncode(content)
-        })
-        return response.Success
-    end
-    return true
+-- الحصول على صورة اللاعب
+local function getPlayerAvatar()
+    return "https://www.roblox.com/headshot-thumbnail/image?userId="..player.UserId.."&width=420&height=420&format=png"
 end
 
--- الدالة الرئيسية
-local function updatePets()
-    local counts = {}
-    for _, pet in ipairs(petNames) do counts[pet] = 0 end
+-- عد الحيوانات
+local function countPets()
+    local petCounts = {}
+    for _, petName in ipairs(petNames) do
+        petCounts[petName] = 0
+    end
     
-    -- عد الحيوانات
     for _, item in ipairs(backpack:GetChildren()) do
-        for pet, _ in pairs(counts) do
-            if item.Name:find(pet) then counts[pet] = counts[pet] + 1 end
+        for petName, _ in pairs(petCounts) do
+            if string.find(item.Name, petName) then
+                petCounts[petName] = petCounts[petName] + 1
+            end
         end
     end
     
-    -- إنشاء المحتوى
-    local message = {
-        username = player.Name.."'s Pets",
-        embeds = {{
-            title = "🐾 Pet Stats",
-            fields = {},
-            footer = {text = os.date()}
-        }}
-    }
+    return petCounts
+end
+
+-- إنشاء محتوى الرسالة (بدون الحيوانات التي عددها صفر)
+local function createMessage(petCounts)
+    local fields = {}
+    local total = 0
     
-    -- إضافة الحيوانات الموجودة فقط
-    for pet, count in pairs(counts) do
+    for petName, count in pairs(petCounts) do
         if count > 0 then
-            table.insert(message.embeds[1].fields, {
-                name = pet,
+            table.insert(fields, {
+                name = petName,
                 value = count,
                 inline = true
             })
+            total = total + count
         end
     end
     
-    -- التعديل الآمن
-    if safeEditMessage(message) then
-        print("تم التحديث بنجاح!")
-    else
-        warn("فشل التحديث - تأكد من صحة ID الرسالة")
+    return {
+        username = player.Name .. " | Pet Tracker",
+        avatar_url = getPlayerAvatar(),
+        embeds = {{
+            title = "🐾 Pet Statistics",
+            description = total > 0 and ("Total Pets: "..total) or "No pets found!",
+            color = 0x00FF00,
+            fields = fields,
+            footer = {
+                text = "Last update: "..os.date("%Y-%m-%d %H:%M:%S")
+            }
+        }}
+    }
+end
+
+-- إرسال البيانات إلى الويب هوك
+local function sendToWebhook(data)
+    local success, json = pcall(http.JSONEncode, http, data)
+    if not success then return false end
+    
+    local request = (http and http.request) or (syn and syn.request)
+    if not request then return false end
+    
+    local response = request({
+        Url = getgenv().config.WEBHOOK_URL,
+        Method = "POST",
+        Headers = {
+            ["Content-Type"] = "application/json"
+        },
+        Body = json
+    })
+    
+    return response.Success
+end
+
+-- الدالة الرئيسية
+local function startTracking()
+    while true do
+        local counts = countPets()
+        local message = createMessage(counts)
+        
+        if sendToWebhook(message) then
+            print("تم تحديث الإحصائيات بنجاح!")
+        else
+            warn("فشل في إرسال البيانات")
+        end
+        
+        wait(UPDATE_INTERVAL)
     end
 end
 
--- التشغيل التلقائي كل دقيقة
-while true do
-    updatePets()
-    wait(60)
-end
+-- بدء التشغيل
+startTracking()
