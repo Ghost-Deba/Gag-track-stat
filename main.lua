@@ -1,15 +1,8 @@
--- ======= الإعدادات الأساسية =======
 local player = game:GetService("Players").LocalPlayer
 local backpack = player:WaitForChild("Backpack")
 local http = game:GetService("HttpService")
-local UPDATE_INTERVAL = 3600 -- كل ساعة
-
--- ======= تكوين الويب هوك =======
-if not getgenv().config then
-    getgenv().config = {
-        WEBHOOK_URL = "https://discord.com/api/webhooks/1400070454235893880/6j4c4REzFxGPHQeD4QsJpo96UyT1WcI2LDmehXKy1q0GEp3MKElsA0e0XLLmKYGH2O23"
-    }
-end
+local UPDATE_INTERVAL = 3600 -- كل ساعة (3600 ثانية)
+local WEBHOOK_NAME = "Ghost Pet Tracker"
 
 -- ======= قائمة الحيوانات الأليفة =======
 local petNames = {
@@ -21,10 +14,13 @@ local petNames = {
     "Dragonfly","Disco Bee","Queen Bee (Pet)","Kitsune","Corrupted Kitsune"
 }
 
--- ======= الدوال الأساسية =======
-
+-- ======= الدوال المساعدة =======
 local function getPlayerAvatar()
     return "https://www.roblox.com/headshot-thumbnail/image?userId="..player.UserId.."&width=420&height=420&format=png"
+end
+
+local function getPlayerThumbnail()
+    return "https://www.roblox.com/headshot-thumbnail/image?userId="..player.UserId.."&width=100&height=100&format=png"
 end
 
 local function countPets()
@@ -45,37 +41,46 @@ local function countPets()
 end
 
 local function createMessage(petCounts)
-    local fields = {}
     local total = 0
+    local petList = ""
     
     for petName, count in pairs(petCounts) do
         if count > 0 then
-            table.insert(fields, {
-                name = petName,
-                value = count,
-                inline = true
-            })
+            petList = petList .. "> " .. petName .. " : `x" .. count .. "`\n"
             total = total + count
         end
     end
     
+    if petList == "" then
+        petList = "> No Pets Found"
+    end
+    
     return {
-        username = player.Name .. " | Pet Tracker",
+        username = WEBHOOK_NAME,
         avatar_url = getPlayerAvatar(),
         embeds = {{
-            title = "🐾 إحصائيات الحيوانات",
-            description = total > 0 and ("المجموع: "..total) or "لا توجد حيوانات",
+            title = "🐾 Pets In Inventory",
+            description = petList,
             color = 0x00FF00,
-            fields = fields,
+            thumbnail = {
+                url = getPlayerThumbnail()
+            },
+            fields = {
+                {
+                    name = "User Info",
+                    value = "> Total Pets : `x" .. total .. "`\n> Account : ||" .. player.Name .. "||",
+                    inline = false
+                }
+            },
             footer = {
-                text = "آخر تحديث: "..os.date("%Y-%m-%d %H:%M:%S")
+                text = ("Last Update : ") .. os.date("%Y-%m-%d %H:%M:%S")
             }
         }}
     }
 end
 
 local function sendToWebhook(data)
-    if not getgenv().config.WEBHOOK_URL then
+    if not getgenv().config or not getgenv().config.WEBHOOK_URL then
         warn("⛔ لم يتم تعيين رابط الويب هوك")
         return false
     end
@@ -98,21 +103,28 @@ local function sendToWebhook(data)
     return response.Success
 end
 
--- ======= التشغيل الرئيسي =======
+-- ======= الدالة الرئيسية =======
 local function startTracking()
+    -- إرسال التقرير الأولي فور التشغيل
+    local firstReport = createMessage(countPets())
+    if sendToWebhook(firstReport) then
+        print("✅ تم إرسال التقرير الأولي بنجاح")
+    else
+        warn("❌ فشل إرسال التقرير الأولي")
+    end
+    
+    -- بدء التتبع الدوري
     while true do
-        local counts = countPets()
-        local message = createMessage(counts)
+        wait(UPDATE_INTERVAL) -- الانتظار للمدة المحددة
         
-        if sendToWebhook(message) then
-            print("✅ تم إرسال الإحصائيات بنجاح")
+        local periodicReport = createMessage(countPets())
+        if sendToWebhook(periodicReport) then
+            print("✅ تم إرسال التقرير الدوري")
         else
-            warn("❌ فشل في إرسال البيانات")
+            warn("❌ فشل إرسال التقرير الدوري")
         end
-        
-        wait(UPDATE_INTERVAL)
     end
 end
 
--- بدء التشغيل
+-- ======= بدء التشغيل =======
 startTracking()
