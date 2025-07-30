@@ -1,24 +1,32 @@
+-- ======= الإعدادات الأساسية =======
 local player = game:GetService("Players").LocalPlayer
 local backpack = player:WaitForChild("Backpack")
 local http = game:GetService("HttpService")
-local UPDATE_INTERVAL = 3600 -- كل 60 ثانية
+local UPDATE_INTERVAL = 3600 -- كل ساعة
 
--- قائمة الحيوانات الأليفة
+-- ======= تكوين الويب هوك =======
+if not getgenv().config then
+    getgenv().config = {
+        WEBHOOK_URL = "https://discord.com/api/webhooks/1400070454235893880/6j4c4REzFxGPHQeD4QsJpo96UyT1WcI2LDmehXKy1q0GEp3MKElsA0e0XLLmKYGH2O23"
+    }
+end
+
+-- ======= قائمة الحيوانات الأليفة =======
 local petNames = {
     "Starfish","Crab","Seagull","Bunny","Dog","Golden Lab","Bee","Shiba Inu","Maneki-neko",
     "Flamingo","Toucan","Sea Turtle","Orangutan","Seal","Honey Bee","Wasp","Nihonzaru","Grey Mouse",
     "Tarantula Hawk","Kodama","Corrupted Kodama","Caterpillar","Snail","Petal Bee","Moth","Scarlet Macaw",
     "Ostrich","Peacock","Capybara","Tanuki","Tanchozuru","Raiju","Brown Mouse","Giant Ant","Praying Mantis",
     "Red Giant Ant","Squirrel","Bear Bee","Butterfly","Pack Bee","Mimic Octopus","Kappa","Koi","Red Fox",
-    "Dragonfly","Disco Bee","Queen Bee","Kitsune","Corrupted Kitsune"
+    "Dragonfly","Disco Bee","Queen Bee (Pet)","Kitsune","Corrupted Kitsune"
 }
 
--- الحصول على صورة اللاعب
+-- ======= الدوال الأساسية =======
+
 local function getPlayerAvatar()
     return "https://www.roblox.com/headshot-thumbnail/image?userId="..player.UserId.."&width=420&height=420&format=png"
 end
 
--- عد الحيوانات
 local function countPets()
     local petCounts = {}
     for _, petName in ipairs(petNames) do
@@ -36,7 +44,6 @@ local function countPets()
     return petCounts
 end
 
--- إنشاء محتوى الرسالة (بدون الحيوانات التي عددها صفر)
 local function createMessage(petCounts)
     local fields = {}
     local total = 0
@@ -56,70 +63,51 @@ local function createMessage(petCounts)
         username = player.Name .. " | Pet Tracker",
         avatar_url = getPlayerAvatar(),
         embeds = {{
-            title = "🐾 Pet Statistics",
-            description = total > 0 and ("Total Pets: "..total) or "No pets found!",
+            title = "🐾 إحصائيات الحيوانات",
+            description = total > 0 and ("المجموع: "..total) or "لا توجد حيوانات",
             color = 0x00FF00,
             fields = fields,
             footer = {
-                text = "Last update: "..os.date("%Y-%m-%d %H:%M:%S")
+                text = "آخر تحديث: "..os.date("%Y-%m-%d %H:%M:%S")
             }
         }}
     }
 end
 
--- إرسال البيانات إلى الويب هوك
 local function sendToWebhook(data)
-    local success, json = pcall(function()
-        return game:GetService("HttpService"):JSONEncode(data)
-    end)
-    
-    if not success or not json then
-        warn("❌ فشل في تحويل البيانات إلى JSON")
+    if not getgenv().config.WEBHOOK_URL then
+        warn("⛔ لم يتم تعيين رابط الويب هوك")
         return false
     end
     
-    -- استخدم request من البيئة التنفيذية (Synapse/Krnl/Fluxus/etc.)
-    local request = (syn and syn.request) or (http and http.request) or (fluxus and fluxus.request) or (krnl and krnl.request)
+    local success, json = pcall(http.JSONEncode, http, data)
+    if not success then return false end
     
-    if not request then
-        warn("⚠️ لم يتم العثور على دالة request في البيئة التنفيذية")
-        return false
-    end
+    local request = (syn and syn.request) or http_request or request
+    if not request then return false end
     
-    local success, response = pcall(function()
-        return request({
-            Url = getgenv().config.WEBHOOK_URL,
-            Method = "POST",
-            Headers = {
-                ["Content-Type"] = "application/json"
-            },
-            Body = json
-        })
-    end)
+    local response = request({
+        Url = getgenv().config.WEBHOOK_URL,
+        Method = "POST",
+        Headers = {
+            ["Content-Type"] = "application/json"
+        },
+        Body = json
+    })
     
-    if not success then
-        warn("❌ فشل في إرسال الطلب: "..tostring(response))
-        return false
-    end
-    
-    if response.StatusCode ~= 200 and response.StatusCode ~= 204 then
-        warn("⚠️ استجابة غير ناجحة من السيرفر: "..tostring(response.StatusCode))
-        return false
-    end
-    
-    return true
+    return response.Success
 end
 
--- الدالة الرئيسية
+-- ======= التشغيل الرئيسي =======
 local function startTracking()
     while true do
         local counts = countPets()
         local message = createMessage(counts)
         
         if sendToWebhook(message) then
-            print("تم تحديث الإحصائيات بنجاح!")
+            print("✅ تم إرسال الإحصائيات بنجاح")
         else
-            warn("فشل في إرسال البيانات")
+            warn("❌ فشل في إرسال البيانات")
         end
         
         wait(UPDATE_INTERVAL)
