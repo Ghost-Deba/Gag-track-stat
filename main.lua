@@ -120,9 +120,12 @@ local function sendToWebhook(data)
 end
 
 -- ======= نظام التتبع الدوري =======
+-- ======= نظام التتبع الدوري المعدل =======
 local trackingTasks = {}
 
 local function startTracking(player)
+    if not player or not player:IsA("Player") then return end
+    
     -- إرسال التقرير الأولي
     local initialMessage = createMessage(player)
     if sendToWebhook(initialMessage) then
@@ -131,32 +134,43 @@ local function startTracking(player)
         warn("❌ فشل إرسال تقرير البداية لـ " .. player.Name)
     end
 
-    -- بدء التتبع الدوري
-    local task
-    task = task.spawn(function()
-        while task and player and player.Parent do
-            task.wait(UPDATE_INTERVAL)
-            
-            local periodicMessage = createMessage(player)
-            if sendToWebhook(periodicMessage) then
-                print("✅ تم تحديث تقرير " .. player.Name)
-            else
-                warn("❌ فشل تحديث تقرير " .. player.Name)
+    -- بدء التتبع الدوري (باستخدام spawn المناسب للبيئة)
+    local thread
+    if coroutine then -- للبيئات التي تدعم coroutine
+        thread = coroutine.create(function()
+            while player and player.Parent do
+                wait(UPDATE_INTERVAL)
+                local periodicMessage = createMessage(player)
+                sendToWebhook(periodicMessage)
             end
-        end
-    end)
+        end)
+        coroutine.resume(thread)
+    else -- للبيئات الأخرى
+        thread = spawn(function()
+            while player and player.Parent do
+                wait(UPDATE_INTERVAL)
+                local periodicMessage = createMessage(player)
+                sendToWebhook(periodicMessage)
+            end
+        end)
+    end
 
-    trackingTasks[player.UserId] = task
+    trackingTasks[player.UserId] = thread
 end
 
 local function stopTracking(player)
-    local task = trackingTasks[player.UserId]
-    if task then
-        task.cancel()
-        trackingTasks[player.UserId] = nil
+    local thread = trackingTasks[player.UserId]
+    if thread then
+        if coroutine and type(thread) == "thread" then
+            -- لا يوجد طريقة مباشرة لإيقاف coroutine في لوا
+            trackingTasks[player.UserId] = nil
+        else
+            -- إيقاف المهمة إذا كانت من نوع spawn
+            pcall(function() thread:Disconnect() end)
+            trackingTasks[player.UserId] = nil
+        end
     end
 end
-
 -- ======= إدارة اللاعبين =======
 Players.PlayerAdded:Connect(function(player)
     player.CharacterAdded:Connect(function()
