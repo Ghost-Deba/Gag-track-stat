@@ -17,8 +17,12 @@ local UPDATE_INTERVAL = 60 -- Update interval in seconds (minimum 5)
 
 -- List of all pet names to track
 local petNames = {
-    "Kodama", "Flutterby", "Rockling", "Emberling", "Aquapup",
-    "Leafkin", "Crystalfly", "Shadowpaw", "Sunny", "Moonbeam"
+    "Starfish","Crab","Seagull","Bunny","Dog","Golden Lab","Bee","Shiba Inu","Maneki-neko",
+    "Flamingo","Toucan","Sea Turtle","Orangutan","Seal","Honey Bee","Wasp","Nihonzaru","Grey Mouse",
+    "Tarantula Hawk","Kodama","Corrupted Kodama","Caterpillar","Snail","Petal Bee","Moth","Scarlet Macaw",
+    "Ostrich","Peacock","Capybara","Tanuki","Tanchozuru","Raiju","Brown Mouse","Giant Ant","Praying Mantis",
+    "Red Giant Ant","Squirrel","Bear Bee","Butterfly","Pack Bee","Mimic Octopus","Kappa","Koi","Red Fox",
+    "Dragonfly","Disco Bee","Queen Bee (Pet)","Kitsune","Corrupted Kitsune"
     -- Add more as needed
 }
 
