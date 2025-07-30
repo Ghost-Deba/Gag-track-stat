@@ -69,11 +69,25 @@ end
 
 -- إرسال البيانات إلى الويب هوك
 local function sendToWebhook(data)
-    local success, json = pcall(http.JSONEncode, http, data)
-    if not success then return false end
+    local success, json = pcall(function()
+        return game:GetService("HttpService"):JSONEncode(data)
+    end)
     
-    if syn and syn.request then
-        local response = syn.request({
+    if not success or not json then
+        warn("❌ فشل في تحويل البيانات إلى JSON")
+        return false
+    end
+    
+    -- استخدم request من البيئة التنفيذية (Synapse/Krnl/Fluxus/etc.)
+    local request = (syn and syn.request) or (http and http.request) or (fluxus and fluxus.request) or (krnl and krnl.request)
+    
+    if not request then
+        warn("⚠️ لم يتم العثور على دالة request في البيئة التنفيذية")
+        return false
+    end
+    
+    local success, response = pcall(function()
+        return request({
             Url = getgenv().config.WEBHOOK_URL,
             Method = "POST",
             Headers = {
@@ -81,14 +95,19 @@ local function sendToWebhook(data)
             },
             Body = json
         })
-        return response.Success
-    else
-        -- Fallback to HttpService
-        local success, response = pcall(function()
-            return http:PostAsync(getgenv().config.WEBHOOK_URL, json, Enum.HttpContentType.ApplicationJson)
-        end)
-        return success and response ~= nil
+    end)
+    
+    if not success then
+        warn("❌ فشل في إرسال الطلب: "..tostring(response))
+        return false
     end
+    
+    if response.StatusCode ~= 200 and response.StatusCode ~= 204 then
+        warn("⚠️ استجابة غير ناجحة من السيرفر: "..tostring(response.StatusCode))
+        return false
+    end
+    
+    return true
 end
 
 -- الدالة الرئيسية
