@@ -1,9 +1,6 @@
--- Grow A Garden Pet Tracker with Configurable Setting
-
 local player = game:GetService("Players").LocalPlayer
 local backpack = player:WaitForChild("Backpack")
 local http = game:GetService("HttpService")
-local marketplace = game:GetService("MarketplaceService")
 
 -- Configuration in getgenv()
 if not getgenv().config then
@@ -26,13 +23,9 @@ local petNames = {
     -- Add more as needed
 }
 
--- Get player avatar thumbnail
+-- Fixed avatar function using Roblox API
 local function getPlayerAvatar()
-    local userId = player.UserId
-    local thumbType = Enum.ThumbnailType.AvatarThumbnail
-    local thumbSize = Enum.ThumbnailSize.Size420x420
-    local content, isReady = marketplace:GetPlayerThumbnailAsync(userId, thumbType, thumbSize)
-    return content
+    return "https://www.roblox.com/headshot-thumbnail/image?userId="..player.UserId.."&width=420&height=420&format=png"
 end
 
 -- Verify webhook URL format
@@ -62,7 +55,7 @@ local function countPets()
     return petCounts
 end
 
--- Create the embed message
+-- Create the embed message (excludes zero counts)
 local function createEmbed(petCounts)
     local embed = {
         title = "🌿 Garden Pet Tracker 🐾",
@@ -77,7 +70,7 @@ local function createEmbed(petCounts)
     local totalPets = 0
     local hasPets = false
     
-    -- Add pet counts
+    -- Add pet counts (only if > 0)
     for petName, count in pairs(petCounts) do
         if count > 0 then
             table.insert(embed.fields, {
@@ -90,7 +83,7 @@ local function createEmbed(petCounts)
         end
     end
     
-    -- Add total count
+    -- Add total count if we have any pets
     if hasPets then
         table.insert(embed.fields, {
             name = "TOTAL PETS",
