@@ -30,35 +30,26 @@ local function getPlayerThumbnail(userId)
     return "https://www.roblox.com/headshot-thumbnail/image?userId="..userId.."&width=420&height=420&format=png"
 end
 
-local function getSheckles()
-    local shecklesStat = leaderstats:FindFirstChild("Sheckles")
-    if shecklesStat then
-        return shecklesStat.Value
+-- دالة لتنسيق الأرقام (1k, 1m, 1b, 1t, 1qa)
+local function formatNumber(num)
+    if not num then return "0" end
+    
+    local suffixes = {"", "k", "m", "b", "t", "qa"}
+    local suffixIndex = 1
+    
+    while num >= 1000 and suffixIndex < #suffixes do
+        num = num / 1000
+        suffixIndex = suffixIndex + 1
     end
-    return 0
+    
+    if suffixIndex == 1 then
+        return tostring(math.floor(num))
+    end
+    
+    return string.format("%.1f%s", math.floor(num * 10) / 10, suffixes[suffixIndex])
 end
 
-local function getKitsuneChestCount()
-    local total = 0
-    -- البحث في جميع الأدوات في الباكباك
-    for _, tool in ipairs(backpack:GetChildren()) do
-        if tool:IsA("Tool") then
-            -- التحقق من وجود سمة (Attribute) تسمى 'e'
-            local eAttribute = tool:GetAttribute("e")
-            if eAttribute then
-                total = total + eAttribute
-            end
-            
-            -- التحقق من وجود قيمة (Value) تسمى 'e' (للتوافق مع الإصدارات القديمة)
-            local eValue = tool:FindFirstChild("e")
-            if eValue and eValue:IsA("IntValue") then
-                total = total + eValue.Value
-            end
-        end
-    end
-    return total
-end
-
+-- دالة لحساب عدد الحيوانات الأليفة
 local function countPets()
     local petCounts = {}
     for _, petName in ipairs(petNames) do
@@ -66,15 +57,13 @@ local function countPets()
     end
     
     for _, item in ipairs(backpack:GetChildren()) do
-        -- تجاهل الأدوات (Tools) لأننا نتعامل معها في دالة أخرى
-        if not item:IsA("Tool") then
-            local itemName = item.Name
-            -- إزالة الأقواس والأرقام للحيوانات
-            local cleanName = itemName:gsub("%b[]", ""):gsub("^%s*(.-)%s*$", "%1")
-            
-            -- البحث عن تطابق كامل مع أسماء البتات
-            if petCounts[cleanName] ~= nil then
-                petCounts[cleanName] = petCounts[cleanName] + 1
+        local itemName = item.Name
+        for petName, _ in pairs(petCounts) do
+            -- مطابقة دقيقة مع بداية ونهاية الاسم
+            if string.match(itemName, "^"..petName.."$") or 
+               string.match(itemName, "^"..petName.." %[") or 
+               string.match(itemName, " "..petName.."$") then
+                petCounts[petName] = petCounts[petName] + 1
             end
         end
     end
@@ -82,16 +71,36 @@ local function countPets()
     return petCounts
 end
 
-local function createMessage(petCounts)
+-- دالة للحصول على عدد صناديق Kitsune
+local function getKitsuneChestCount()
+    for _, item in ipairs(backpack:GetChildren()) do
+        if string.find(item.Name, "Kitsune Chest %[") then
+            local count = string.match(item.Name, "%[(X?)(%d+)%]")
+            if count then
+                return tonumber(count:match("%d+")) or 0
+            end
+        end
+    end
+    return 0
+end
+
+-- دالة للحصول على عدد الـ Sheckles
+local function getSheckles()
+    local shecklesStat = leaderstats:FindFirstChild("Sheckles")
+    if shecklesStat then
+        return shecklesStat.Value or 0
+    end
+    return 0
+end
+
+local function createMessage(petCounts, kitsuneCount, sheckles)
     local totalPets = 0
     local petList = ""
     local userId = player.UserId
     local avatarUrl = getPlayerThumbnail(userId)
     local thumbnailUrl = getPlayerThumbnail(userId)
-    local sheckles = getSheckles()
-    local kitsuneChests = getKitsuneChestCount()
     
-    -- قائمة الحيوانات
+    -- إنشاء قائمة الحيوانات الأليفة
     for petName, count in pairs(petCounts) do
         if count > 0 then
             petList = petList .. "> " .. petName .. " : `x" .. count .. "`\n"
@@ -99,14 +108,17 @@ local function createMessage(petCounts)
         end
     end
     
-    -- إضافة Kitsune Chests إذا كانت متوفرة
-    if kitsuneChests > 0 then
-        petList = petList .. "\n> Kitsune Chest : `x" .. kitsuneChests .. "`\n"
-    end
-    
     if petList == "" then
         petList = "> No Pets Found"
     end
+    
+    -- إضافة صناديق Kitsune إذا وجدت
+    if kitsuneCount > 0 then
+        petList = petList .. "\n> Kitsune Chest : `x" .. kitsuneCount .. "`\n"
+    end
+    
+    -- تنسيق عدد الـ Sheckles
+    local formattedSheckles = formatNumber(sheckles)
     
     return {
         username = WEBHOOK_NAME,
@@ -122,7 +134,7 @@ local function createMessage(petCounts)
                 {
                     name = "User Info",
                     value = "> Total Pets : `x" .. totalPets .. "`\n" ..
-                            "> Sheckles : `x" .. sheckles .. "`\n" ..
+                            "> Sheckles : `" .. formattedSheckles .. "`\n" ..
                             "> Account : ||" .. player.Name .. "||",
                     inline = false
                 }
@@ -161,7 +173,12 @@ end
 -- ======= الدالة الرئيسية =======
 local function startTracking()
     -- إرسال التقرير الأولي فور التشغيل
-    local firstReport = createMessage(countPets())
+    local firstReport = createMessage(
+        countPets(),
+        getKitsuneChestCount(),
+        getSheckles()
+    )
+    
     if sendToWebhook(firstReport) then
         print("✅ تم إرسال التقرير الأولي بنجاح")
     else
@@ -172,7 +189,12 @@ local function startTracking()
     while true do
         wait(UPDATE_INTERVAL) -- الانتظار للمدة المحددة
         
-        local periodicReport = createMessage(countPets())
+        local periodicReport = createMessage(
+            countPets(),
+            getKitsuneChestCount(),
+            getSheckles()
+        )
+        
         if sendToWebhook(periodicReport) then
             print("✅ تم إرسال التقرير الدوري")
         else
