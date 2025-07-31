@@ -164,8 +164,8 @@ local function createMessage(petCounts)
         username = WEBHOOK_NAME,
         avatar_url = avatarUrl,
         embeds = {{
-            title = "🐾 Ghost Pet Tracker",
-            color = 0x00FF00,
+            title = "Inventory Tracker",
+            color = 0xff0000,
             thumbnail = {
                 url = thumbnailUrl -- إعادة إضافة الثمبنيل هنا
             },
