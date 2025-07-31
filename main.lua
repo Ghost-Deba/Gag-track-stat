@@ -14,27 +14,21 @@ local petNames = {
     "Dragonfly","Disco Bee","Queen Bee (Pet)","Kitsune","Corrupted Kitsune"
 }
 
--- ======= الدوال المساعدة المعدلة =======
-local function getPlayerImage(size, imageType)
-    local success, result = pcall(function()
-        return game:GetService("Players"):GetUserThumbnailAsync(
-            player.UserId,
-            imageType or Enum.ThumbnailType.AvatarBust,
-            size or Enum.ThumbnailSize.Size100x100
-        )
+-- ======= الدوال المساعدة =======
+local function getPlayerThumbnail(userId)
+    local success, response = pcall(function()
+        return game:HttpGet("https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds="..userId.."&size=420x420&format=Png")
     end)
-    return success and result or "https://i.imgur.com/J5hOFNC.png" -- صورة افتراضية إذا فشل
+    
+    if success then
+        local data = http:JSONDecode(response)
+        if data and data.data and data.data[1] then
+            return data.data[1].imageUrl
+        end
+    end
+    return "https://www.roblox.com/headshot-thumbnail/image?userId="..userId.."&width=420&height=420&format=png"
 end
 
-local function getPlayerAvatar()
-    return getPlayerImage(Enum.ThumbnailSize.Size420x420, Enum.ThumbnailType.HeadShot)
-end
-
-local function getPlayerThumbnail()
-    return getPlayerImage(Enum.ThumbnailSize.Size100x100, Enum.ThumbnailType.AvatarBust)
-end
-
--- ======= بقية الدوال كما هي (بدون تغيير) =======
 local function countPets()
     local petCounts = {}
     for _, petName in ipairs(petNames) do
@@ -55,6 +49,9 @@ end
 local function createMessage(petCounts)
     local total = 0
     local petList = ""
+    local userId = player.UserId
+    local avatarUrl = getPlayerThumbnail(userId)
+    local thumbnailUrl = getPlayerThumbnail(userId) -- يمكنك تغيير الحجم إذا أردت
     
     for petName, count in pairs(petCounts) do
         if count > 0 then
@@ -69,13 +66,12 @@ local function createMessage(petCounts)
     
     return {
         username = WEBHOOK_NAME,
-        avatar_url = getPlayerAvatar(),
         embeds = {{
-            title = "🐾 Pets In Inventory",
+            title = "Pets In Inventory",
             description = petList,
             color = 0x00FF00,
             thumbnail = {
-                url = getPlayerThumbnail()
+                url = thumbnailUrl
             },
             fields = {
                 {
