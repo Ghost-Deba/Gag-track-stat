@@ -131,13 +131,19 @@ local function createMessage(petCounts)
         username = WEBHOOK_NAME,
         avatar_url = avatarUrl,
         embeds = {{
-            title = "🐾 Pets In Inventory",
-            description = petList,
+            title = "Player Inventory", -- العنوان الرئيسي هنا
             color = 0x00FF00,
             thumbnail = {
                 url = thumbnailUrl
             },
             fields = {
+                -- حقل البيتز
+                {
+                    name = "Pets",
+                    value = petList,
+                    inline = false
+                },
+                
                 -- حقل Kitsune Chest (يظهر فقط إذا كان العدد > 0)
                 kitsuneCount > 0 and {
                     name = "Event",
@@ -145,7 +151,7 @@ local function createMessage(petCounts)
                     inline = false
                 } or nil,
                 
-                -- حقل User Info
+                -- حقل المعلومات
                 {
                     name = "User Info",
                     value = "> Total Pets : `x" .. totalPets .. "`\n" ..
@@ -155,7 +161,7 @@ local function createMessage(petCounts)
                 }
             },
             footer = {
-                text = ("Last Update : ") .. os.date("%Y-%m-%d %H:%M:%S")
+                text = "Last Update: " .. os.date("%Y-%m-%d %H:%M:%S")
             }
         }}
     }
