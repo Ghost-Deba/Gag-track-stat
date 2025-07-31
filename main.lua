@@ -125,11 +125,6 @@ local function createMessage(petCounts, kitsuneCount, sheckles)
         petList = "> No Pets Found"
     end
     
-    -- إضافة صناديق Kitsune إذا وجدت
-    if kitsuneCount > 0 then
-        petList = petList .. "> Kitsune Chest : `x" .. kitsuneCount .. "`\n"
-    end
-    
     -- تنسيق عدد الـ Sheckles
     local formattedSheckles = formatNumber(sheckles)
     
@@ -144,6 +139,11 @@ local function createMessage(petCounts, kitsuneCount, sheckles)
                 url = thumbnailUrl
             },
             fields = {
+                    {
+                    name = "Event",
+                    value = "> Kitsune Chest: `x" .. kitsuneCount .. "`\n" ..
+                    inline = false
+                    }
                 {
                     name = "User Info",
                     value = "> Total Pets : `x" .. totalPets .. "`\n" ..
