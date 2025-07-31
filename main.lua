@@ -31,7 +31,6 @@ end
 
 local function countItems()
     local petCounts = {}
-    local chestCounts = {}
     local kitsuneChestCount = 0
     
     -- تهيئة العدادات
@@ -41,15 +40,16 @@ local function countItems()
     
     -- عد العناصر
     for _, item in ipairs(backpack:GetChildren()) do
-        -- عد الصناديق
-        if item.Name:find("Kitsune Chest %[x %d+%]") then
-            local count = tonumber(item.Name:match("%[x (%d+)%]")) or 1
+        -- عد صناديق Kitsune Chest بشكل منفصل
+        if item.Name:match("^Kitsune Chest %[x%d+%]$") then
+            local count = tonumber(item.Name:match("%d+")) or 1
             kitsuneChestCount = kitsuneChestCount + count
-        -- عد الحيوانات الأليفة
         else
-            for petName, _ in pairs(petCounts) do
-                if item.Name:find(petName) and not item.Name:find("Chest") then
+            -- عد الحيوانات الأليفة بدقة (تطابق كامل للاسم)
+            for _, petName in ipairs(petNames) do
+                if item.Name == petName then
                     petCounts[petName] = petCounts[petName] + 1
+                    break -- الخروج من الحلقة بعد العثور على تطابق
                 end
             end
         end
