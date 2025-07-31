@@ -111,7 +111,10 @@ local function createMessage(petCounts)
     local petList = ""
     local kitsuneCount = getKitsuneChestCount()
     local sheckles = getSheckles()
-    
+    local userId = player.UserId
+    local avatarUrl = getPlayerThumbnail(userId)
+    local thumbnailUrl = avatarUrl -- استخدام نفس رابط صورة البروفيل
+
     -- إنشاء قائمة البيتز
     for petName, count in pairs(petCounts) do
         if count > 0 then
@@ -120,36 +123,42 @@ local function createMessage(petCounts)
         end
     end
 
-    -- الحقول الأساسية (ستظهر دائمًا)
+    -- الحقول الأساسية
     local fields = {
         {
             name = "Pets",
             value = petList ~= "" and petList or "> No Pets Found",
             inline = false
-        },
-        {
-            name = "User Info",
-            value = "> Total Pets : `x" .. totalPets .. "`\n" ..
-                    "> Sheckles : `" .. formatNumber(sheckles) .. "`\n" ..
-                    "> Account : ||" .. player.Name .. "||",
-            inline = false
         }
     }
 
-    -- إضافة حقل Kitsune Chest فقط إذا كان العدد > 0
+    -- إضافة حقل Kitsune Chest إذا وجد
     if kitsuneCount > 0 then
-        table.insert(fields, 2, { -- إدراج الحقل في المركز الثاني
+        table.insert(fields, {
             name = "Event",
             value = "> Kitsune Chest : `x" .. kitsuneCount .. "`",
             inline = false
         })
     end
 
+    -- حقل المعلومات الشخصية
+    table.insert(fields, {
+        name = "User Info",
+        value = "> Total Pets : `x" .. totalPets .. "`\n" ..
+                "> Sheckles : `" .. formatNumber(sheckles) .. "`\n" ..
+                "> Account : ||" .. player.Name .. "||",
+        inline = false
+    })
+
     return {
         username = WEBHOOK_NAME,
+        avatar_url = avatarUrl,
         embeds = {{
-            title = "🐾 Inventory Report",
+            title = "🐾 Ghost Pet Tracker",
             color = 0x00FF00,
+            thumbnail = {
+                url = thumbnailUrl -- إعادة إضافة الثمبنيل هنا
+            },
             fields = fields,
             footer = {
                 text = "Last Update: " .. os.date("%Y-%m-%d %H:%M:%S")
