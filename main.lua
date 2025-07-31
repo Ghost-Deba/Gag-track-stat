@@ -7,12 +7,22 @@ local WEBHOOK_NAME = "Ghost Pet Tracker"
 
 -- ======= قائمة الحيوانات الأليفة =======
 local petNames = {
-    "Starfish","Crab","Seagull","Bunny","Dog","Golden Lab","Bee","Shiba Inu","Maneki-neko",
-    "Flamingo","Toucan","Sea Turtle","Orangutan","Seal","Honey Bee","Wasp","Nihonzaru","Grey Mouse",
-    "Tarantula Hawk","Kodama","Corrupted Kodama","Caterpillar","Snail","Petal Bee","Moth","Scarlet Macaw",
-    "Ostrich","Peacock","Capybara","Tanuki","Tanchozuru","Raiju","Brown Mouse","Giant Ant","Praying Mantis",
-    "Red Giant Ant","Squirrel","Bear Bee","Butterfly","Pack Bee","Mimic Octopus","Kappa","Koi","Red Fox",
-    "Dragonfly","Disco Bee","Queen Bee (Pet)","Kitsune","Corrupted Kitsune"
+    "Ankylosaurus", "Axolotl", "Bald Eagle", "Bear Bee", "Bee", "Black Bunny", "Blood Hedgehog", "Blood Kiwi",
+    "Blood Owl", "Brontosaurus", "Brown Mouse", "Bunny", "Butterfly", "Capybara", "Cat", "Caterpillar",
+    "Chicken", "Chicken Zombie", "Cooked Owl", "Corrupted Kitsune", "Corrupted Kodama", "Cow", "Crab", "Deer",
+    "Dilophosaurus", "Disco Bee", "Dog", "Dragonfly", "Echo Frog", "Fennec Fox", "Firefly", "Flamingo",
+    "Football", "Frog", "Giant Ant", "Golden Bee", "Golden Lab", "Grey Mouse", "Hamster", "Hedgehog",
+    "Honey Bee", "Hyacinth Macaw", "Iguanodon", "Kappa", "Kitsune", "Kodama", "Koi", "Maneki-neko",
+    "Meerkat", "Mimic Octopus", "Mizuchi", "Mole", "Monkey", "Moon Cat", "Moth", "Night Owl", "Nihonzaru",
+    "Orange Tabby", "Orangutan", "Ostrich", "Owl", "Pachycephalosaurus", "Pack Bee", "Panda",
+    "Parasaurolophus", "Peacock", "Petal Bee", "Pig", "Polar Bear", "Praying Mantis", "Pterodactyl",
+    "Queen Bee", "Raccoon", "Radioactive Stegosaurus", "Raiju", "Rainbow Ankylosaurus",
+    "Rainbow Corrupted Kitsune", "Rainbow Dilophosaurus", "Rainbow Iguanodon", "Rainbow Kodama",
+    "Rainbow Maneki-neko", "Rainbow Pachycephalosaurus", "Rainbow Parasaurolophus",
+    "Rainbow Spinosaurus", "Raptor", "Red Dragon", "Red Fox", "Red Giant Ant", "Rooster", "Sand Snake",
+    "Scarlet Macaw", "Sea Otter", "Sea Turtle", "Seagull", "Seal", "Shiba Inu", "Silver Monkey", "Snail",
+    "Spinosaurus", "Spotted Deer", "Squirrel", "Starfish", "Stegosaurus", "T-Rex", "Tanchozuru", "Tanuki",
+    "Tarantula Hawk", "Toucan", "Triceratops", "Tsuchinoko", "Turtle", "Wasp"
 }
 
 -- ======= الدوال المساعدة =======
