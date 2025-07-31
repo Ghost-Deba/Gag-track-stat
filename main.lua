@@ -39,11 +39,24 @@ local function getSheckles()
 end
 
 local function getKitsuneChestCount()
-    local chest = backpack:FindFirstChild("Kitsune Chest")
-    if chest then
-        return chest:FindFirstChild("e").Value or 0
+    local total = 0
+    -- البحث في جميع الأدوات في الباكباك
+    for _, tool in ipairs(backpack:GetChildren()) do
+        if tool:IsA("Tool") then
+            -- التحقق من وجود سمة (Attribute) تسمى 'e'
+            local eAttribute = tool:GetAttribute("e")
+            if eAttribute then
+                total = total + eAttribute
+            end
+            
+            -- التحقق من وجود قيمة (Value) تسمى 'e' (للتوافق مع الإصدارات القديمة)
+            local eValue = tool:FindFirstChild("e")
+            if eValue and eValue:IsA("IntValue") then
+                total = total + eValue.Value
+            end
+        end
     end
-    return 0
+    return total
 end
 
 local function countPets()
@@ -53,13 +66,15 @@ local function countPets()
     end
     
     for _, item in ipairs(backpack:GetChildren()) do
-        local itemName = item.Name
-        for petName, _ in pairs(petCounts) do
-            -- مطابقة دقيقة مع بداية ونهاية الاسم
-            if string.match(itemName, "^"..petName.."$") or 
-               string.match(itemName, "^"..petName.." %[") or 
-               string.match(itemName, " "..petName.."$") then
-                petCounts[petName] = petCounts[petName] + 1
+        -- تجاهل الأدوات (Tools) لأننا نتعامل معها في دالة أخرى
+        if not item:IsA("Tool") then
+            local itemName = item.Name
+            -- إزالة الأقواس والأرقام للحيوانات
+            local cleanName = itemName:gsub("%b[]", ""):gsub("^%s*(.-)%s*$", "%1")
+            
+            -- البحث عن تطابق كامل مع أسماء البتات
+            if petCounts[cleanName] ~= nil then
+                petCounts[cleanName] = petCounts[cleanName] + 1
             end
         end
     end
