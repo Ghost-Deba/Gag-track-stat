@@ -11,7 +11,7 @@ local petNames = {
     "Tarantula Hawk","Kodama","Corrupted Kodama","Caterpillar","Snail","Petal Bee","Moth","Scarlet Macaw",
     "Ostrich","Peacock","Capybara","Tanuki","Tanchozuru","Raiju","Brown Mouse","Giant Ant","Praying Mantis",
     "Red Giant Ant","Squirrel","Bear Bee","Butterfly","Pack Bee","Mimic Octopus","Kappa","Koi","Red Fox",
-    "Dragonfly","Disco Bee","Queen Bee (Pet)","Kitsune","Corrupted Kitsune"
+    "Dragonfly","Disco Bee","Queen Bee","Kitsune","Corrupted Kitsune"
 }
 
 -- ======= الدوال المساعدة =======
@@ -29,34 +29,48 @@ local function getPlayerThumbnail(userId)
     return "https://www.roblox.com/headshot-thumbnail/image?userId="..userId.."&width=420&height=420&format=png"
 end
 
-local function countPets()
+local function countItems()
     local petCounts = {}
+    local chestCounts = {}
+    local kitsuneChestCount = 0
+    
+    -- تهيئة العدادات
     for _, petName in ipairs(petNames) do
         petCounts[petName] = 0
     end
     
+    -- عد العناصر
     for _, item in ipairs(backpack:GetChildren()) do
-        for petName, _ in pairs(petCounts) do
-            if string.find(item.Name, petName) then
-                petCounts[petName] = petCounts[petName] + 1
+        -- عد الصناديق
+        if item.Name:find("Kitsune Chest %[x %d+%]") then
+            local count = tonumber(item.Name:match("%[x (%d+)%]")) or 1
+            kitsuneChestCount = kitsuneChestCount + count
+        -- عد الحيوانات الأليفة
+        else
+            for petName, _ in pairs(petCounts) do
+                if item.Name:find(petName) and not item.Name:find("Chest") then
+                    petCounts[petName] = petCounts[petName] + 1
+                end
             end
         end
     end
     
-    return petCounts
+    return petCounts, kitsuneChestCount
 end
 
-local function createMessage(petCounts)
-    local total = 0
+local function createMessage(petCounts, kitsuneChestCount)
+    local totalPets = 0
     local petList = ""
+    local chestList = ""
     local userId = player.UserId
     local avatarUrl = getPlayerThumbnail(userId)
-    local thumbnailUrl = getPlayerThumbnail(userId) -- يمكنك تغيير الحجم إذا أردت
+    local thumbnailUrl = getPlayerThumbnail(userId)
     
+    -- قائمة الحيوانات الأليفة
     for petName, count in pairs(petCounts) do
         if count > 0 then
             petList = petList .. "> " .. petName .. " : `x" .. count .. "`\n"
-            total = total + count
+            totalPets = totalPets + count
         end
     end
     
@@ -64,26 +78,43 @@ local function createMessage(petCounts)
         petList = "> No Pets Found"
     end
     
+    -- قائمة الصناديق
+    if kitsuneChestCount > 0 then
+        chestList = "> Kitsune Chest : `x" .. kitsuneChestCount .. "`\n"
+    end
+    
+    -- إنشاء رسالة الديسكورد
+    local embed = {
+        title = "🐾 Pets In Inventory",
+        description = petList,
+        color = 0x00FF00,
+        thumbnail = {
+            url = thumbnailUrl
+        },
+        fields = {
+            {
+                name = "User Info",
+                value = "> Total Pets : `x" .. totalPets .. "`\n> Account : ||" .. player.Name .. "||",
+                inline = false
+            }
+        },
+        footer = {
+            text = ("Last Update : ") .. os.date("%Y-%m-%d %H:%M:%S")
+        }
+    }
+    
+    -- إضافة قسم الصناديق إذا وجدت
+    if kitsuneChestCount > 0 then
+        table.insert(embed.fields, {
+            name = "📦 Chests",
+            value = chestList,
+            inline = false
+        })
+    end
+    
     return {
         username = WEBHOOK_NAME,
-        embeds = {{
-            title = "Pets In Inventory",
-            description = petList,
-            color = 0x00FF00,
-            thumbnail = {
-                url = thumbnailUrl
-            },
-            fields = {
-                {
-                    name = "User Info",
-                    value = "> Total Pets : `x" .. total .. "`\n> Account : ||" .. player.Name .. "||",
-                    inline = false
-                }
-            },
-            footer = {
-                text = ("Last Update : ") .. os.date("%Y-%m-%d %H:%M:%S")
-            }
-        }}
+        embeds = {embed}
     }
 end
 
@@ -114,7 +145,8 @@ end
 -- ======= الدالة الرئيسية =======
 local function startTracking()
     -- إرسال التقرير الأولي فور التشغيل
-    local firstReport = createMessage(countPets())
+    local petCounts, kitsuneChestCount = countItems()
+    local firstReport = createMessage(petCounts, kitsuneChestCount)
     if sendToWebhook(firstReport) then
         print("✅ تم إرسال التقرير الأولي بنجاح")
     else
@@ -125,7 +157,8 @@ local function startTracking()
     while true do
         wait(UPDATE_INTERVAL) -- الانتظار للمدة المحددة
         
-        local periodicReport = createMessage(countPets())
+        local petCounts, kitsuneChestCount = countItems()
+        local periodicReport = createMessage(petCounts, kitsuneChestCount)
         if sendToWebhook(periodicReport) then
             print("✅ تم إرسال التقرير الدوري")
         else
