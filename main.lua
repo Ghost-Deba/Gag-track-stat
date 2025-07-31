@@ -72,16 +72,22 @@ local function countPets()
 end
 
 -- دالة للحصول على عدد صناديق Kitsune
+-- دالة محسنة للحصول على عدد صناديق Kitsune
 local function getKitsuneChestCount()
+    local total = 0
+    
     for _, item in ipairs(backpack:GetChildren()) do
-        if string.find(item.Name, "Kitsune Chest %[") then
-            local count = string.match(item.Name, "%[(X?)(%d+)%]")
-            if count then
-                return tonumber(count:match("%d+")) or 0
+        if item.Name:find("Kitsune Chest %[") then
+            -- استخراج العدد من النمط: "Kitsune Chest [X359]" أو "Kitsune Chest [359]"
+            local quantityStr = item.Name:match("%[(X?)(%d+)%]")
+            if quantityStr then
+                local quantity = tonumber(quantityStr:match("%d+")) or 0
+                total = total + quantity
             end
         end
     end
-    return 0
+    
+    return total
 end
 
 -- دالة للحصول على عدد الـ Sheckles
