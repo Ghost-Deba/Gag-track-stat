@@ -127,7 +127,7 @@ local function createMessage(petCounts, kitsuneCount, sheckles)
     
     -- إضافة صناديق Kitsune إذا وجدت
     if kitsuneCount > 0 then
-        petList = petList .. "\n> Kitsune Chest : `x" .. kitsuneCount .. "`\n"
+        petList = petList .. "> Kitsune Chest : `x" .. kitsuneCount .. "`\n"
     end
     
     -- تنسيق عدد الـ Sheckles
