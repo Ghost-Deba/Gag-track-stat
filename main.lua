@@ -139,19 +139,19 @@ local function createMessage(petCounts, kitsuneCount, sheckles)
                 url = thumbnailUrl
             },
             fields = {
-                    {
-                    name = "Event",
-                    value = "> Kitsune Chest: `x" .. kitsuneCount .. "`\n" ..
-                    inline = false
-                    }
-                {
-                    name = "User Info",
-                    value = "> Total Pets : `x" .. totalPets .. "`\n" ..
-                            "> Sheckles : `" .. formattedSheckles .. "`\n" ..
-                            "> Account : ||" .. player.Name .. "||",
-                    inline = false
-                }
-            },
+    {
+        name = "Event",
+        value = "> Kitsune Chest: `x" .. kitsuneCount .. "`",
+        inline = false
+    },
+    {
+        name = "User Info",
+        value = "> Total Pets : `x" .. totalPets .. "`\n" ..
+                "> Sheckles : `" .. formattedSheckles .. "`\n" ..
+                "> Account : ||" .. player.Name .. "||",
+        inline = false
+    }
+},
             footer = {
                 text = ("Last Update : ") .. os.date("%Y-%m-%d %H:%M:%S")
             }
