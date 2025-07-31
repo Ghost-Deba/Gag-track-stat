@@ -75,18 +75,25 @@ end
 -- دالة محسنة للحصول على عدد صناديق Kitsune
 local function getKitsuneChestCount()
     local total = 0
+    print("\n[بحث] جاري فحص صناديق كيتسون...")
     
     for _, item in ipairs(backpack:GetChildren()) do
-        if item.Name:find("Kitsune Chest %[") then
-            -- استخراج العدد من النمط: "Kitsune Chest [X359]" أو "Kitsune Chest [359]"
-            local quantityStr = item.Name:match("%[(X?)(%d+)%]")
+        if item.Name:lower():find("kitsune chest") then
+            -- الطريقة الدقيقة لاستخراج العدد من النمط: [X359] أو [359]
+            local quantityStr = item.Name:match("%[X?(%d+)%]")
+            
             if quantityStr then
-                local quantity = tonumber(quantityStr:match("%d+")) or 0
+                local quantity = tonumber(quantityStr)
+                print("✅ وجدت:", item.Name, "-> الكمية:", quantity)
                 total = total + quantity
+            else
+                print("⚠️ صندوق بدون كمية محددة:", item.Name)
+                total = total + 1
             end
         end
     end
     
+    print("📊 الإجمالي:", total)
     return total
 end
 
