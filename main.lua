@@ -111,11 +111,8 @@ local function createMessage(petCounts)
     local petList = ""
     local kitsuneCount = getKitsuneChestCount()
     local sheckles = getSheckles()
-    local userId = player.UserId
-    local avatarUrl = getPlayerThumbnail(userId)
-    local thumbnailUrl = getPlayerThumbnail(userId)
-
-    -- إنشاء قائمة الحيوانات الأليفة
+    
+    -- إنشاء قائمة البيتز
     for petName, count in pairs(petCounts) do
         if count > 0 then
             petList = petList .. "> " .. petName .. " : `x" .. count .. "`\n"
@@ -123,43 +120,37 @@ local function createMessage(petCounts)
         end
     end
 
-    if petList == "" then
-        petList = "> No Pets Found"
+    -- الحقول الأساسية (ستظهر دائمًا)
+    local fields = {
+        {
+            name = "Pets",
+            value = petList ~= "" and petList or "> No Pets Found",
+            inline = false
+        },
+        {
+            name = "User Info",
+            value = "> Total Pets : `x" .. totalPets .. "`\n" ..
+                    "> Sheckles : `" .. formatNumber(sheckles) .. "`\n" ..
+                    "> Account : ||" .. player.Name .. "||",
+            inline = false
+        }
+    }
+
+    -- إضافة حقل Kitsune Chest فقط إذا كان العدد > 0
+    if kitsuneCount > 0 then
+        table.insert(fields, 2, { -- إدراج الحقل في المركز الثاني
+            name = "Event",
+            value = "> Kitsune Chest : `x" .. kitsuneCount .. "`",
+            inline = false
+        })
     end
 
     return {
         username = WEBHOOK_NAME,
-        avatar_url = avatarUrl,
         embeds = {{
-            title = "Player Inventory", -- العنوان الرئيسي هنا
+            title = "🐾 Inventory Report",
             color = 0x00FF00,
-            thumbnail = {
-                url = thumbnailUrl
-            },
-            fields = {
-                -- حقل البيتز
-                {
-                    name = "Pets",
-                    value = petList,
-                    inline = false
-                },
-                
-                -- حقل Kitsune Chest (يظهر فقط إذا كان العدد > 0)
-                kitsuneCount > 0 and {
-                    name = "Event",
-                    value = "> Kitsune Chest : `x" .. kitsuneCount .. "`",
-                    inline = false
-                } or nil,
-                
-                -- حقل المعلومات
-                {
-                    name = "User Info",
-                    value = "> Total Pets : `x" .. totalPets .. "`\n" ..
-                            "> Sheckles : `" .. formatNumber(sheckles) .. "`\n" ..
-                            "> Account : ||" .. player.Name .. "||",
-                    inline = false
-                }
-            },
+            fields = fields,
             footer = {
                 text = "Last Update: " .. os.date("%Y-%m-%d %H:%M:%S")
             }
