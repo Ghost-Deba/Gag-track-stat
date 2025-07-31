@@ -113,7 +113,7 @@ local function createMessage(petCounts)
     local sheckles = getSheckles()
     local userId = player.UserId
     local avatarUrl = getPlayerThumbnail(userId)
-    local thumbnailUrl = avatarUrl -- استخدام نفس رابط صورة البروفيل
+    local thumbnailUrl = getPlayerThumbnail(userId)
 
     -- إنشاء قائمة البيتز
     for petName, count in pairs(petCounts) do
