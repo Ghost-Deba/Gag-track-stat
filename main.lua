@@ -4,17 +4,20 @@ local http = game:GetService("HttpService")
 local UPDATE_INTERVAL = 3600 -- كل ساعة (3600 ثانية)
 local WEBHOOK_NAME = "Ghost Pet Tracker"
 
--- ======= قائمة الحيوانات الأليفة =======
+-- قائمة الحيوانات الأليفة مع التحقق من الأسماء الدقيقة
 local petNames = {
     "Starfish","Crab","Seagull","Bunny","Dog","Golden Lab","Bee","Shiba Inu","Maneki-neko",
     "Flamingo","Toucan","Sea Turtle","Orangutan","Seal","Honey Bee","Wasp","Nihonzaru","Grey Mouse",
     "Tarantula Hawk","Kodama","Corrupted Kodama","Caterpillar","Snail","Petal Bee","Moth","Scarlet Macaw",
     "Ostrich","Peacock","Capybara","Tanuki","Tanchozuru","Raiju","Brown Mouse","Giant Ant","Praying Mantis",
     "Red Giant Ant","Squirrel","Bear Bee","Butterfly","Pack Bee","Mimic Octopus","Kappa","Koi","Red Fox",
-    "Dragonfly","Disco Bee","Queen Bee","Kitsune","Corrupted Kitsune"
+    "Dragonfly","Disco Bee","Queen Bee (Pet)","Kitsune","Corrupted Kitsune"
 }
 
--- ======= الدوال المساعدة =======
+local function debugPrint(...)
+    print("[DEBUG]", ...)
+end
+
 local function getPlayerThumbnail(userId)
     local success, response = pcall(function()
         return game:HttpGet("https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds="..userId.."&size=420x420&format=Png")
@@ -38,23 +41,31 @@ local function countItems()
         petCounts[petName] = 0
     end
     
+    debugPrint("بدء عد العناصر في الحقيبة...")
+    debugPrint("عدد العناصر في الحقيبة:", #backpack:GetChildren())
+    
     -- عد العناصر
     for _, item in ipairs(backpack:GetChildren()) do
-        -- عد صناديق Kitsune Chest بشكل منفصل
-        if item.Name:match("^Kitsune Chest %[x%d+%]$") then
-            local count = tonumber(item.Name:match("%d+")) or 1
+        debugPrint("فحص العنصر:", item.Name)
+        
+        -- عد صناديق Kitsune Chest
+        if item.Name:find("Kitsune Chest %[x%d+%]") then
+            local count = tonumber(item.Name:match("%[x(%d+)%]")) or 1
             kitsuneChestCount = kitsuneChestCount + count
+            debugPrint("تم العثور على Kitsune Chest، العدد:", count)
         else
-            -- عد الحيوانات الأليفة بدقة (تطابق كامل للاسم)
+            -- عد الحيوانات الأليفة بدقة
             for _, petName in ipairs(petNames) do
                 if item.Name == petName then
                     petCounts[petName] = petCounts[petName] + 1
-                    break -- الخروج من الحلقة بعد العثور على تطابق
+                    debugPrint("تم العثور على حيوان أليف:", petName, "العدد الجديد:", petCounts[petName])
+                    break
                 end
             end
         end
     end
     
+    debugPrint("انتهى العد. عدد صناديق Kitsune Chest:", kitsuneChestCount)
     return petCounts, kitsuneChestCount
 end
 
@@ -114,6 +125,7 @@ local function createMessage(petCounts, kitsuneChestCount)
     
     return {
         username = WEBHOOK_NAME,
+        avatar_url = avatarUrl,
         embeds = {embed}
     }
 end
@@ -125,28 +137,51 @@ local function sendToWebhook(data)
     end
     
     local success, json = pcall(http.JSONEncode, http, data)
-    if not success then return false end
+    if not success then
+        warn("❌ فشل في ترميز بيانات JSON")
+        return false
+    end
     
-    local request = (syn and syn.request) or http_request or request
-    if not request then return false end
+    local request = (syn and syn.request) or (http and http.request) or http_request or request
+    if not request then
+        warn("❌ لم يتم العثور على دالة request متاحة")
+        return false
+    end
     
-    local response = request({
-        Url = getgenv().config.WEBHOOK_URL,
-        Method = "POST",
-        Headers = {
-            ["Content-Type"] = "application/json"
-        },
-        Body = json
-    })
+    local success, response = pcall(function()
+        return request({
+            Url = getgenv().config.WEBHOOK_URL,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = json
+        })
+    end)
     
-    return response.Success
+    if not success then
+        warn("❌ فشل في إرسال الطلب:", response)
+        return false
+    end
+    
+    if response.Success then
+        print("✅ تم إرسال البيانات بنجاح")
+        return true
+    else
+        warn("❌ فشل إرسال الويب هوك. رمز الحالة:", response.StatusCode)
+        return false
+    end
 end
 
--- ======= الدالة الرئيسية =======
 local function startTracking()
+    print("🚀 بدء تتبع الحيوانات الأليفة والصناديق...")
+    
     -- إرسال التقرير الأولي فور التشغيل
     local petCounts, kitsuneChestCount = countItems()
     local firstReport = createMessage(petCounts, kitsuneChestCount)
+    
+    debugPrint("البيانات المرسلة:", http:JSONEncode(firstReport))
+    
     if sendToWebhook(firstReport) then
         print("✅ تم إرسال التقرير الأولي بنجاح")
     else
@@ -155,10 +190,14 @@ local function startTracking()
     
     -- بدء التتبع الدوري
     while true do
-        wait(UPDATE_INTERVAL) -- الانتظار للمدة المحددة
+        wait(UPDATE_INTERVAL)
         
+        print("🔄 إرسال التقرير الدوري...")
         local petCounts, kitsuneChestCount = countItems()
         local periodicReport = createMessage(petCounts, kitsuneChestCount)
+        
+        debugPrint("البيانات المرسلة:", http:JSONEncode(periodicReport))
+        
         if sendToWebhook(periodicReport) then
             print("✅ تم إرسال التقرير الدوري")
         else
@@ -167,5 +206,10 @@ local function startTracking()
     end
 end
 
--- ======= بدء التشغيل =======
-startTracking()
+-- التحقق من وجود العناصر قبل البدء
+if not player or not backpack then
+    warn("❌ لم يتم العثور على اللاعب أو الحقيبة")
+else
+    print("🎮 تم التعرف على اللاعب:", player.Name)
+    startTracking()
+end
