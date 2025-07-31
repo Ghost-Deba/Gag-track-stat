@@ -106,13 +106,15 @@ local function getSheckles()
     return 0
 end
 
-local function createMessage(petCounts, kitsuneCount, sheckles)
+local function createMessage(petCounts)
     local totalPets = 0
     local petList = ""
+    local kitsuneCount = getKitsuneChestCount()
+    local sheckles = getSheckles()
     local userId = player.UserId
     local avatarUrl = getPlayerThumbnail(userId)
     local thumbnailUrl = getPlayerThumbnail(userId)
-    
+
     -- إنشاء قائمة الحيوانات الأليفة
     for petName, count in pairs(petCounts) do
         if count > 0 then
@@ -120,14 +122,11 @@ local function createMessage(petCounts, kitsuneCount, sheckles)
             totalPets = totalPets + count
         end
     end
-    
+
     if petList == "" then
         petList = "> No Pets Found"
     end
-    
-    -- تنسيق عدد الـ Sheckles
-    local formattedSheckles = formatNumber(sheckles)
-    
+
     return {
         username = WEBHOOK_NAME,
         avatar_url = avatarUrl,
@@ -139,19 +138,22 @@ local function createMessage(petCounts, kitsuneCount, sheckles)
                 url = thumbnailUrl
             },
             fields = {
-    {
-        name = "Event",
-        value = "> Kitsune Chest: `x" .. kitsuneCount .. "`",
-        inline = false
-    },
-    {
-        name = "User Info",
-        value = "> Total Pets : `x" .. totalPets .. "`\n" ..
-                "> Sheckles : `" .. formattedSheckles .. "`\n" ..
-                "> Account : ||" .. player.Name .. "||",
-        inline = false
-    }
-},
+                -- حقل Kitsune Chest (يظهر فقط إذا كان العدد > 0)
+                kitsuneCount > 0 and {
+                    name = "Event",
+                    value = "> Kitsune Chest : `x" .. kitsuneCount .. "`",
+                    inline = false
+                } or nil,
+                
+                -- حقل User Info
+                {
+                    name = "User Info",
+                    value = "> Total Pets : `x" .. totalPets .. "`\n" ..
+                            "> Sheckles : `" .. formatNumber(sheckles) .. "`\n" ..
+                            "> Account : ||" .. player.Name .. "||",
+                    inline = false
+                }
+            },
             footer = {
                 text = ("Last Update : ") .. os.date("%Y-%m-%d %H:%M:%S")
             }
